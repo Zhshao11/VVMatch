@@ -39,7 +39,7 @@ preregistered gates and did not produce held-out accuracy results.
 **Latest experiment:** `IGM-M3 GCRP`, stopped as
 `inconclusive / S3_pretraining_trainability` before representation probing.
 
-See [research/CURRENT_STATE.md](research/CURRENT_STATE.md) and the current
+See the portable [project status](research/STATUS.md) and the current
 [terminal interpretation](research/PROMPT37_M3_GCRP_TERMINAL_INTERPRETATION_20260930.md).
 Portable numerical results are collected in
 [research/RESULTS_SUMMARY_IGM.md](research/RESULTS_SUMMARY_IGM.md).
