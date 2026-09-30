@@ -1,0 +1,71 @@
+# OS and editor files
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Python caches and local environments
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+.venv/
+venv/
+env/
+.env
+.env.*
+
+# Codex recovery, remote mirrors, and build sandboxes
+/.codex-recovered-chats/
+/.codex_*/
+
+# Local datasets, downloaded repositories, caches, and scratch outputs
+/tmp/
+/data/
+/datasets/
+/outputs/
+/checkpoints/
+
+# Model weights and binary experiment state
+*.pt
+*.pth
+*.ckpt
+*.onnx
+*.npy
+*.npz
+*.pkl
+*.pickle
+
+# Logs, archives, and secrets
+*.log
+*.zip
+*.tar
+*.tar.gz
+*.tgz
+*.7z
+smtp_secret.json
+*secret*.json
+
+# Host-specific GPU/watchdog configuration
+/gpu_keeper/config.zzvr.json
+/gpu_keeper/gpu-keeper.zzvr.service
+/gpu_keeper/experiment_watchdog/watchdog_config.zzvr.json
+/gpu_keeper/state/
+/gpu_keeper/experiment_watchdog/state/
+/gpu_keeper/experiment_watchdog/reports/
+
+# Full historical experiment mirrors are local scientific archives. Keep the
+# compact registries, schemas, templates, tools, and design documents instead.
+/research_archive/experiments/
+
+# Runtime manifests bind immutable runs to specific hosts and absolute paths.
+# Keep them with local provenance; publish portable examples separately.
+/research/experiments/*_RUNTIME_MANIFEST.json
+
+# Frozen result cards and raw payloads stay local because they contain
+# host-bound provenance. Commit the portable research/RESULTS_SUMMARY_IGM.md.
+/research/results/

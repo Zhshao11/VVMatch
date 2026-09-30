@@ -1,0 +1,5 @@
+# Versions used for the validated zzvr runs (Python 3.10.20, CUDA 12.8).
+numpy==1.26.4
+opencv-python-headless==4.11.0.86
+torch==2.8.0
+
