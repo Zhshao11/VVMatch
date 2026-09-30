@@ -1,0 +1,142 @@
+schema_version: 1
+experiment_id: P37-20260924-IGM-M0R1-HP1
+created: '2026-09-24'
+status: frozen_single_rescue
+
+function_a:
+  name: ConsistentBidirectionalDustbinAssignment
+  scientific_hypothesis: >-
+    Replacing M0's pair-mass-complement null with bidirectional categorical
+    dustbins aligns supervised likelihood and mutual non-null inference, so the
+    unchanged standalone network can express and fit usable tiny correspondences.
+  inputs:
+    tensors:
+      - M0 source and target contextual tokens
+      - valid and padding masks
+      - pair logits and source/target null logits
+    coordinate_systems:
+      - unchanged stride-8 pixel-center coarse coordinates
+      - unchanged stride-4 bilateral fine coordinates
+    masks_and_validity:
+      - invalid opposite-image candidates masked before categorical softmax
+      - rows with no valid candidates map to null probability one
+  outputs:
+    tensors:
+      - source categorical distribution over targets plus null
+      - target categorical distribution over sources plus null
+      - mutual non-null IDs and geometric-mean confidence
+    valid_ranges:
+      - finite probabilities in [0, 1]
+      - every valid categorical distribution sums to one within 1e-5
+      - no invalid or padded selected ID
+    fallback_behavior: no mutual non-null pair returns an empty correspondence set
+  main_path_action_point: coarse partial assignment before unchanged bilateral refinement
+  downstream_tensor_or_decision_changed: discrete coarse match IDs and confidence
+
+identity_contract:
+  disable_or_identity_setting: synthetic identity homography with identical images
+  baseline_reference: exact categorical identity assignment
+  exact_hash_fields:
+    - parent M0 unchanged-module tensor hashes
+    - source runner config data and checkpoint hashes
+    - sample stream and evaluator hashes
+  numeric_tolerances:
+    categorical_sum_max_abs: 1.0e-5
+    unchanged_parent_tensor_max_abs: 0.0
+    coordinate_roundtrip_max_abs_px: 1.0e-4
+  required_parity: all M0 modules outside assignment/loss are byte-identical at initialization
+
+positive_control:
+  type: same_parameterization_free_logits_and_student_synthetic
+  construction: >-
+    First optimize free S/n/m tensors through the exact A/B categorical and
+    mutual decoder on identity, translation, repeated-texture, unmatched, and
+    padded cases. Then optimize the real student on synthetic image pairs
+    through encoder, interaction, assignment, and refinement.
+  expected_action: >-
+    Exact positives become mutual non-null, trustworthy unmatched rows select
+    null, padded IDs never appear, and both refined coordinates follow GT.
+  minimum_gate: >-
+    Free tensors recover all feasible positives and unmatched labels; real
+    student synthetic median transfer <=0.5 px; no case uses forced top-k or a
+    confidence threshold.
+  same_path_as_student: true
+
+matched_control:
+  type: parent_and_scratch_baseline
+  construction: >-
+    Read-only M0 failure endpoint proves the repaired decoder changes the named
+    failure; read-only OfficialSLiM-HP-Scratch tiny result verifies the byte-
+    identical stream is learnable. Formal comparison retrains the baseline only
+    after rescue tiny and budget gates pass.
+  invariants:
+    - same frozen 72/18/18 HPatches roles and tiny eight pairs
+    - same sample and augmentation stream
+    - same M0 architecture outside assignment/loss
+    - same optimizer schedule steps precision and evaluator
+
+activation_audit:
+  branch_use_counter: source categorical target categorical mutual non-null decode bilateral refinement
+  output_delta_metric: >-
+    null argmax rates mutual count positive-set mass unmatched-null mass
+    selected IDs confidence and bilateral offsets
+  minimum_activation_gate: >-
+    All branches execute; free-logit and synthetic controls produce both null
+    and non-null actions; real tiny endpoint has finite nonconstant null rates.
+
+trainability_audit:
+  trainable_parameter_groups:
+    - encoder_and_fpn
+    - dense_pair_interaction
+    - affinity_and_null_logits
+    - bilateral_fine_projection
+  optimizer_membership_log: optimizer_parameter_IDs.json
+  gradient_norm_log: component_and_tensor_gradient_table.csv
+  parameter_delta_norm_log: initial_final_parameter_delta_table.csv
+  finite_nonzero_gradient_gate: every intended tensor receives finite nonzero gradients and updates
+
+training_adequacy:
+  tiny_set_pairs_and_scenes: exact parent 8 pairs from 4 train-role sequences
+  optimizer_steps_or_window_exposures: 1000-step rescue tiny; conditional 20000-step formal
+  fixed_checkpoint_rule: tiny step 1000; formal step 20000 only
+  full_metric_trajectory_path: complete_training_and_action_trajectory.csv
+  convergence_or_stability_rule: >-
+    Log source/target null argmax rates, mutual counts, inliers, loss components,
+    gradients, and parameter deltas throughout; loss decline alone cannot pass.
+  tiny_set_expression_gate: >-
+    loss ratio <=0.25, >=7/8 pairs with >=20 inliers at 3 px, every pair has
+    >=20 final matches, and no final pair has null argmax rate 1.0 on both sides.
+
+evaluation_fidelity:
+  official_checkpoint_hash: not_applicable_scratch_primary_comparison
+  train_dev_test_physical_scene_isolation: inherited frozen HPatches sequence-level 72/18/18
+  identity_match_hash_gate: synthetic identity plus unchanged-parent initialization hashes
+  resize: shorter_edge_480_aspect_preserved_pad_multiple_16
+  ransac_threshold: 3px_at_shorter_edge_480_scaled_to_original
+  ransac_confidence: 0.99999
+  repeat_aggregation: per_repeat_sequence_macro_auc_then_repeat_mean
+  heldout1200_access: forbidden_historically_consumed
+
+interpretation_boundary:
+  highest_claim_if_passed: >-
+    Corrected standalone assignment has tiny action expression and may proceed
+    to matched resource/formal evaluation; no generalization claim at tiny.
+  exact_configuration_rejected_if_failed: exact M0R1 assignment loss optimizer and tiny recipe
+  method_families_not_rejected:
+    - standalone image matching
+    - covisibility-conditioned context
+    - efficient geometry feedback
+    - geometry-consistent pretraining
+    - partial assignment broadly
+  reopen_only_if:
+    - implementation error correction without semantic change
+
+required_artifacts:
+  - frozen_contract_and_hashes
+  - parent_unchanged_module_hash_audit
+  - free_logit_and_student_positive_controls
+  - categorical_and_decoder_unit_tests
+  - gradient_update_reload_and_action_trajectory
+  - tiny_terminal_result_card
+  - conditional_budget_and_formal_result_cards
+

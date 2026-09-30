@@ -1,0 +1,87 @@
+schema_version: 1
+experiment: P37-20260926-IGM-M1-HP2
+status: frozen_for_engineering_audit
+
+data:
+  source_sequences: inherited_E051_108
+  split_rule: >-
+    Preserve the prior 18-sequence development role. From the prior 72 train
+    sequences, rank each i_/v_ stratum by SHA256("P37-20260926-IGM-M1-HP2-EVAL|" +
+    sequence_name) and move the first 9 i_ and 9 v_ sequences to HP2 evaluation.
+    HP2 train is every remaining sequence, including the prior consumed
+    evaluation role. This yields 34/38 train, 9/9 development, 9/9 evaluation.
+  role_counts:
+    train: {illumination: 34, viewpoint: 38, total: 72, native_pairs: 360}
+    development: {illumination: 9, viewpoint: 9, total: 18, native_pairs: 90}
+    evaluation: {illumination: 9, viewpoint: 9, total: 18, native_pairs: 90}
+  isolation_unit: HPatches_sequence
+  claim_boundary: retrospective_internal_only_all_108_historically_consumed
+
+tiny:
+  trained_arm: IGM-M1-VASI
+  read_only_controls: [IGM-M0R1, OfficialSLiM-HP-Scratch]
+  seed: 20260926
+  steps: 1500
+  pairs: 8
+  viewpoint_pairs: 4
+  mandatory_gates:
+    gt_route_coverage_ge: 0.95
+    predicted_synthetic_route_coverage_ge: 0.90
+    permuted_route_coverage_le: 0.50
+    loss_ratio_le: 0.25
+    pairs_with_at_least_20_inliers_ge: 7
+    every_pair_matches_ge: 20
+    viewpoint_route_coverage_ge: 0.75
+    all_tensors_gradient_update_reload: true
+
+formal:
+  trained_arms: [OfficialSLiM-HP-Scratch, IGM-M0R1, IGM-M1-VASI]
+  seeds: [20260926, 20260927]
+  steps_per_trajectory: 20000
+  effective_batch: 4
+  precision: fp32
+  optimizer: {name: AdamW, learning_rate: 0.0002, weight_decay: 0.0001, betas: [0.9, 0.999], warmup_steps: 500, final_lr_fraction: 0.05, global_grad_clip: 1.0}
+  checkpoint_rule: final_step_20000_only
+  max_gpu_hours_all_six_trajectories: 48
+  watchdog_required: true
+  preferred_host: zzvr
+
+development_gate:
+  release_after_all_six_endpoints_frozen: true
+  m1_minus_m0r1_overall_auc5_pp_ge: 5.0
+  m1_minus_m0r1_viewpoint_auc5_pp_ge: 10.0
+  m1_minus_m0r1_both_seed_directions_positive: true
+  m1_illumination_delta_vs_m0r1_pp_ge: -3.0
+  action_if_failed: stop_before_HP2_evaluation
+
+evaluation:
+  release_only_after_development_gate_and_endpoint_hashes_frozen: true
+  correspondence_cap: 1000
+  ransac_repeats: [66, 67, 68, 69, 70, 71]
+  primary_metric: equal_sequence_macro_auc_at_5
+  bootstrap: {unit: sequence, samples: 10000, seed: 20260926, paired_indices: true}
+  practical_noninferiority:
+    m1_minus_official_mean_auc5_pp_ge: -3.0
+    each_seed_delta_pp_gt: -5.0
+    paired_bootstrap_ci_lower_pp_gt: -5.0
+    viewpoint_delta_pp_ge: -5.0
+    illumination_delta_pp_ge: -3.0
+  mechanism_gain:
+    m1_minus_m0r1_mean_auc5_pp_ge: 8.0
+    m1_minus_m0r1_viewpoint_auc5_pp_ge: 15.0
+    both_seed_directions_positive: true
+  efficiency:
+    parameter_ratio_to_official_le: 0.50
+    inference_p95_ratio_to_official_le: 0.50
+    peak_memory_ratio_to_official_le: 0.75
+
+stop_conditions:
+  - any HP2 sequence or file overlap
+  - any HP2 evaluation metric read before development pass and endpoint freeze
+  - any OfficialSLiM D0 JCGA or pretrained matcher dependency in IGM
+  - any M0R1 assignment refiner cap or evaluator semantic change
+  - any M2 geometry feedback or M3 pretraining component
+  - any preflight tiny gradient update reload route or action gate failure
+  - credible six-trajectory forecast exceeds 48 GPU-hours
+  - artifact overwrite deletion or forbidden data access
+

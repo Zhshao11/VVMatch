@@ -1,0 +1,83 @@
+schema_version: 1
+experiment_id: REPLACE_ME
+created: YYYY-MM-DD
+
+function_a:
+  name: REPLACE_ME
+  scientific_hypothesis: REPLACE_ME
+  observable_behavior: REPLACE_ME
+  inputs:
+    tensors: []
+    coordinate_systems: []
+    masks_and_validity: []
+  outputs:
+    tensors: []
+    valid_ranges: []
+    fallback_behavior: REPLACE_ME
+  main_path_action_point: REPLACE_ME
+  downstream_tensor_or_decision_changed: REPLACE_ME
+
+identity_contract:
+  disable_or_identity_setting: REPLACE_ME
+  baseline_reference: REPLACE_ME
+  exact_hash_fields: []
+  numeric_tolerances: {}
+  required_parity: REPLACE_ME
+
+positive_control:
+  type: synthetic | GT | teacher_replay | free_output
+  construction: REPLACE_ME
+  expected_action: REPLACE_ME
+  minimum_gate: REPLACE_ME
+  same_path_as_student: true
+
+matched_control:
+  type: permutation | random | no_op | equal_budget
+  construction: REPLACE_ME
+  invariants: []
+
+activation_audit:
+  branch_use_counter: REPLACE_ME
+  output_delta_metric: REPLACE_ME
+  minimum_activation_gate: REPLACE_ME
+
+trainability_audit:
+  trainable_parameter_groups: []
+  optimizer_membership_log: REPLACE_ME
+  gradient_norm_log: REPLACE_ME
+  parameter_delta_norm_log: REPLACE_ME
+  finite_nonzero_gradient_gate: REPLACE_ME
+
+training_adequacy:
+  tiny_set_pairs_and_scenes: REPLACE_ME
+  optimizer_steps_or_window_exposures: REPLACE_ME
+  fixed_checkpoint_rule: REPLACE_ME
+  full_metric_trajectory_path: REPLACE_ME
+  convergence_or_stability_rule: REPLACE_ME
+  tiny_set_expression_gate: REPLACE_ME
+
+evaluation_fidelity:
+  official_checkpoint_hash: REPLACE_ME
+  train_dev_test_physical_scene_isolation: REPLACE_ME
+  identity_match_hash_gate: REPLACE_ME
+  resize: 1184
+  ransac_threshold: 0.275
+  ransac_confidence: 0.99999
+  repeat_aggregation: method_paired_repeat_mean
+  heldout1200_access: forbidden_historically_consumed
+
+interpretation_boundary:
+  highest_claim_if_passed: REPLACE_ME
+  exact_configuration_rejected_if_failed: REPLACE_ME
+  method_families_not_rejected: []
+  reopen_only_if: []
+
+required_artifacts:
+  - frozen_contract
+  - runner_and_hash
+  - config_and_manifest_hashes
+  - unit_identity_and_positive_control_results
+  - gradient_and_parameter_update_log
+  - complete_training_history
+  - final_checkpoint_or_reconstruction_reference
+  - summary_and_pair_or_scene_rows

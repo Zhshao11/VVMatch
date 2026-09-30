@@ -1,0 +1,49 @@
+schema_version: 1
+required_fields:
+  - id
+  - status
+  - gate_scope
+  - claim_level
+  - hypothesis
+  - host
+  - result_path
+  - core_result
+  - decision
+  - rejected_scope
+  - not_rejected
+  - reopen_only_if
+  - artifact_policy
+status_values:
+  - active
+  - passed
+  - rejected
+  - inconclusive
+  - invalid
+  - superseded
+  - archived
+gate_scope_values:
+  - integrity
+  - oracle
+  - learnability
+  - expression
+  - generalization
+  - pose
+  - final
+claim_level_values:
+  - diagnostic_only
+  - stage_evidence
+  - method_candidate
+  - final_result
+notes:
+  - A passed record must identify the exact gate that passed.
+  - An invalid record cannot reject its hypothesis.
+  - A rejected record must describe only the tested implementation in rejected_scope.
+  - Unknown provenance is written as unknown and must not be inferred from directory names.
+  - Scene identifiers are strings and retain leading zeros.
+  - Inconclusive is required when implementation fidelity or optimization adequacy has not been established.
+optional_audit_fields:
+  - implementation_fidelity
+  - training_adequacy
+  - evaluation_fidelity
+  - verdict_strength
+  - max_allowed_conclusion

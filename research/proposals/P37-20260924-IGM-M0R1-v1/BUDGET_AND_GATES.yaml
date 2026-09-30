@@ -1,0 +1,58 @@
+schema_version: 1
+experiment: P37-20260924-IGM-M0R1-HP1
+status: frozen_single_rescue
+
+inherited:
+  s0_bundle_sha256: 9718b1a04da78d061ecee010477f4f16e6d7a3c570caa0d7b61075e745149952
+  train_development_evaluation_sequences: [72, 18, 18]
+  image_geometry: shorter_edge_480_aspect_preserved_pad_multiple_16
+  formal_seeds: [20260923, 20260924]
+  formal_steps_per_trajectory: 20000
+  effective_batch: 4
+  precision: fp32
+  optimizer: {name: AdamW, learning_rate: 0.0002, weight_decay: 0.0001, betas: [0.9, 0.999], warmup_steps: 500, final_lr_fraction: 0.05, global_grad_clip: 1.0}
+  checkpoint_rule: final_step_only
+  common_evaluator: {cap: 1000, repeats: [66, 67, 68, 69, 70, 71], confidence: 0.99999, max_iterations: 10000}
+
+preflight:
+  free_logit_cases: [identity, translation, repeated_texture, unmatched, padded]
+  student_synthetic_cases: [identity, translation, scale]
+  mandatory:
+    - categorical sums and masks
+    - exact mutual non-null decode
+    - parent unchanged-module hash parity
+    - every-tensor gradient update and reload
+    - action trajectory logging
+    - dependency and forbidden-read audit
+
+tiny:
+  arm: IGM-M0R1
+  read_only_controls: [IGM-M0, OfficialSLiM-HP-Scratch]
+  seed: 20260923
+  steps: 1000
+  pairs: 8
+  gates:
+    loss_ratio_le: 0.25
+    pairs_with_at_least_20_inliers_at_3px_ge: 7
+    every_pair_final_match_count_ge: 20
+    both_sides_all_null_pairs_eq: 0
+    all_parameter_tensors_gradient_update_reload: true
+
+conditional_formal:
+  trained_arms: [OfficialSLiM-HP-Scratch, IGM-M0R1]
+  seeds: [20260923, 20260924]
+  steps_per_trajectory: 20000
+  max_gpu_hours_all_four_trajectories: 48
+  budget_preflight_required: true
+  watchdog_required: true
+  preferred_host: zzvr
+  evaluation_release: only_after_all_four_final_endpoints_and_hashes_frozen
+
+stop_conditions:
+  - any preflight or tiny gate failure
+  - any change outside assignment loss logging and required runner integration
+  - any forced match count top-k threshold or post-hoc decode rescue
+  - any role overlap evaluation read or provenance mismatch
+  - credible formal forecast exceeds 48 GPU-hours
+  - artifact overwrite deletion or forbidden data access
+

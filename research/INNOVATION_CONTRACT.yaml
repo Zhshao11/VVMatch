@@ -1,0 +1,60 @@
+schema_version: 1
+method: P37-20260930-IGM-M3-GCRP-v1
+state: M3_GCRP_P0_INCONCLUSIVE_INTERPRETED__NO_NEW_ROUTE_ACTIVE
+
+current_claim:
+  id: training_only_geometry_consistent_representation_pretraining
+  claim: >-
+    HPatches-train-only geometry-consistent pretraining can make the lightweight
+    independent M0R1 encoder viewpoint-stable enough for practical accuracy
+    non-inferiority without adding inference parameters or dependencies.
+  must_implement:
+    - Reuse exact sealed HP2 roles as HP3 and read only train-role data before gates.
+    - Pretrain only M0R1 encoder/FPN with correct composite homographies.
+    - Use masked EMA reconstruction symmetric InfoNCE expected-coordinate geometry and variance/covariance losses.
+    - Compare correct-H against identical shuffled-H pretraining and random initialization.
+    - Delete EMA projector predictor and scale embeddings before matcher fine-tuning and inference.
+    - Load only exported encoder/FPN into exact M0R1 and fine-tune its unchanged full path.
+    - Match 30k total steps and image exposures across Official scratch M0R1 scratch and M3.
+  must_not_implement:
+    - Use VASI M2 geometry feedback hard visibility gates threshold or top-k rescue.
+    - Use DINO VGGT MASt3R Depth Anything external teachers internet videos MegaDepth or pretrained matcher checkpoints.
+    - Change M0R1 assignment refiner cap coordinate restoration or evaluator.
+    - Read development evaluation or pretrain-probe data before its frozen gate.
+    - Keep any pretraining-only module in inference.
+    - Use SourceMux bl_tunnel heldout1200 Gate2 test final protected SAR OSDataset or delete overwrite artifacts.
+  controls:
+    - correct-H GCRP versus shuffled-H and random representation controls
+    - IGM-M0R1-Scratch-30K equal-step predecessor
+    - OfficialSLiM-HP-Scratch-30K matched architecture baseline
+  observable_evidence:
+    - HP3 role and 64-fit 8-probe manifests with zero intersections
+    - transform exposure optimizer and source hashes
+    - masked loss recall cosine margin geometry error and feature-collapse trajectories
+    - every-tensor gradient update EMA reload and exported-state audits
+    - exact M0R1 inference keys parameters latency memory and action path
+    - tiny formal development and conditional evaluation metrics
+  stop_conditions:
+    - Any data-role leak external dependency or inference-module residue.
+    - Any failed correct-versus-shuffled representation gate.
+    - Any failed matcher tiny gradient update reload or action gate.
+    - Credible six-trajectory forecast exceeds 48 GPU-hours.
+    - Any unmatched step exposure precision endpoint or evaluator in primary controls.
+
+current_run:
+  status: inconclusive
+  stage: stopped_at_P0_S2_pretraining_capacity_and_control_fidelity
+  prior_result: >-
+    Exact VASI stopped at L3 because GT/predicted routes were worse than M0R1
+    and predicted was indistinguishable from permutation. HP2 dev/eval unread.
+  current_change: training_only_GCRP_initialization_for_exact_M0R1
+  decision_path: research/PROMPT37_M3_GCRP_METHOD_DECISION_20260930.md
+  experiment_sheet: research/experiments/P37-20260930-IGM-M3-HP3.md
+  engineering_handoff: research/experiments/P37-20260930-IGM-M3-HP3_ENGINEERING_HANDOFF.md
+  result_card: research/results/P37-20260930-IGM-M3-HP3/RESULT_CARD.md
+  terminal_evidence: >-
+    Correct-H 10000-step masked-loss ratio 0.4347184 failed the frozen <=0.40
+    gate; shuffled-H has four nonfinite total-loss rows. The eight train-role
+    probe sequences and development/evaluation payloads remain unread.
+  interpretation_path: research/PROMPT37_M3_GCRP_TERMINAL_INTERPRETATION_20260930.md
+  next_decision: no_new_route_active_future_method_decision_requires_new_contract

@@ -1,0 +1,208 @@
+schema_version: 1
+experiment_id: E-063
+created: "2026-09-06"
+
+function_a:
+  name: DeformDescMatcherConsumptionAligner
+  scientific_hypothesis: >
+    A DeformDesc-centered feature extractor trained long on the SLiM-aligned
+    MegaDepth outdoor protocol, with optional feature-side projection/
+    calibration and an explicit matcher-survival loss, can preserve DeformDesc
+    discrimination while producing descriptor, confidence, and score
+    distributions that the unchanged OfficialSLiM matcher/fine/dual-softmax/
+    quota/RRU path can consume, improving MegaDepth interface diagnostics and
+    narrowing or surpassing the local OfficialSLiM-O0 reference.
+  observable_behavior: >
+    The trainable feature extractor changes descriptor maps and matcher-input
+    distributions before the unchanged OfficialSLiM matcher. Changes must be
+    visible in local-window rank, score spread, mutual/collision behavior,
+    top1-topk gaps, survival after mutual/dual-softmax/quota/RRU, selected IDs
+    or RRU-facing coordinate/confidence tensors, and final HPatches homography
+    AUC if endpoint evaluation is run.
+  inputs:
+    tensors:
+      - raw visible image pair tensors after official SLiM image preprocessing
+      - MegaDepth supervision tensors available to the official training path
+      - optional train-time teacher/free-output descriptor or rank targets from
+        the same MegaDepth train pair
+    coordinate_systems:
+      - raw image coordinates
+      - official SLiM feature pyramid coordinates
+      - official local-window coordinates consumed by fine matching/RRU
+      - HPatches original-image corner coordinates for evaluation only
+    masks_and_validity:
+      - MegaDepth depth/camera valid correspondence masks for training
+      - official local-window valid masks
+      - HPatches pair list and homography files for frozen evaluation only
+  outputs:
+    tensors:
+      - DeformDesc-centered coarse and fine descriptor maps at official matcher-
+        consumed scales
+      - optional feature-extractor-side normalized/calibrated descriptor outputs
+      - optional projection/calibration and survival score tensors before the
+        official matcher consumes them
+      - unchanged official matcher selected matches and RRU outputs downstream
+    valid_ranges:
+      - finite descriptor values
+      - noncollapsed descriptor norms within predeclared SLiM-consumable bands
+      - finite dual-softmax scores and confidence values
+      - valid selected coordinates inside image bounds
+    fallback_behavior: >
+      Identity/no-op mode must reproduce the declared parent ASCS feature path
+      within frozen numeric/hash tolerances and must not alter matcher, quota,
+      RRU, RANSAC, or evaluator behavior.
+  main_path_action_point: feature extractor output before OfficialSLiM matcher input
+  downstream_tensor_or_decision_changed: >
+    Matcher-consumed descriptors, rank surfaces, confidence, and survival
+    scores change, and those changes reach unchanged official selected IDs,
+    RRU-facing coordinates/confidences, and HPatches homography estimation.
+
+identity_contract:
+  disable_or_identity_setting: DeformDesc branch bypass or parent feature replay
+  baseline_reference: frozen ASCS-OfficialMatcher with untouched OfficialSLiM-O0 as external ruler
+  exact_hash_fields:
+    - official_slim_checkpoint_sha256
+    - official_slim_source_config_manifest_sha256
+    - parent_ascs_checkpoint_sha256
+    - hpatches_pair_list_sha256
+    - runner_sha256
+    - function_contract_sha256
+  numeric_tolerances:
+    descriptor_replay_max_abs: 1.0e-6
+    selected_id_replay_jaccard: 1.0
+    hpatches_auc_replay_abs_pp: 1.0e-4
+  required_parity: >
+    Disabled/identity E-063 path must replay the frozen parent feature path at
+    matcher input and selected output, and OfficialSLiM-O0 replay must match
+    the local E-052/E-053 HPatches reference if that endpoint is used.
+
+positive_control:
+  type: teacher_replay
+  construction: >
+    On a tiny MegaDepth train subset, feed teacher/free-output descriptor or
+    rank targets that place GT/local-window correct cells above hard negatives
+    while preserving finite score spread; run through the same unchanged
+    OfficialSLiM matcher path.
+  expected_action: >
+    Correct-cell local rank improves and selected IDs/RRU-facing coordinates
+    change in the intended direction without touching quota/RRU/RANSAC code.
+  minimum_gate: >
+    Positive control must produce nonzero selected-ID or rank/action delta and
+    better tiny-set local-window correct-cell rank than identity/no-op.
+  same_path_as_student: true
+
+matched_control:
+  type: permutation
+  construction: >
+    Descriptor shuffle, geometry shuffle, wrong-pair, no-image/stat-only,
+    same-stats random descriptor, random same-count, and equal-budget identity
+    controls under the same evaluator.
+  invariants:
+    - same HPatches pair list
+    - same image resizing
+    - same RANSAC parameters
+    - same official matcher/quota/RRU path
+    - same checkpoint selection rule
+
+activation_audit:
+  branch_use_counter: E063_DeformDesc_forward_calls_and_active_interface_loss_samples
+  output_delta_metric: descriptor_norm_delta_score_spread_delta_rank_delta_selected_id_delta
+  minimum_activation_gate: >
+    Enabled method must change matcher-input descriptors, rank distributions,
+    or survival scores on real MegaDepth samples and must reach selected IDs or
+    RRU-facing tensors; zero-action endpoints are invalid or inconclusive.
+
+trainability_audit:
+  trainable_parameter_groups:
+    - DeformDesc_feature_extractor
+    - feature_extractor_side_projection_module_if_present
+    - feature_extractor_side_calibration_module_if_present
+    - feature_extractor_side_survival_head_if_present
+  optimizer_membership_log: optimizer_membership.json
+  gradient_norm_log: gradient_norms.csv
+  parameter_delta_norm_log: parameter_delta_norms.csv
+  finite_nonzero_gradient_gate: >
+    Every intended trainable group must receive finite nonzero gradients and
+    nonzero initial-to-final parameter deltas; matcher, receiver, quota, RRU,
+    RANSAC, and evaluator parameters must not be trainable.
+
+training_adequacy:
+  tiny_set_pairs_and_scenes: >
+    Small MegaDepth train-only subset with physical-scene IDs recorded; no
+    HPatches samples.
+  optimizer_steps_or_window_exposures: >
+    D0 uses the predeclared long endpoint, preferred 38 epochs or exact
+    equivalent exposure if resource permits. D1 and D2 use the short endpoints
+    4800, 9600, and 19200 optimizer steps.
+  fixed_checkpoint_rule: >
+    D0's primary checkpoint is the predeclared long endpoint before any
+    endpoint evaluation. D1 and D2 checkpoint selection must be declared before
+    HPatches and cannot use HPatches.
+  full_metric_trajectory_path: training_trajectory.csv
+  convergence_or_stability_rule: >
+    Report train and MegaDepth-validation final-window slopes, optimizer
+    steps, processed pairs/windows, wall-clock time, GPU count, effective batch
+    size, and endpoint stability. Underfit or incomplete training cannot
+    reject the method family.
+  tiny_set_expression_gate: >
+    Tiny-set overfit must improve local-window correct-cell rank and official
+    matcher-path selected action versus identity/no-op before formal training.
+
+evaluation_fidelity:
+  official_checkpoint_hash: bdddcf3e673b60a5abf143ebfbc289f3ce821c08bff3f5369b69a49aca55f132
+  train_dev_test_physical_scene_isolation: >
+    MegaDepth train/validation scenes must remain isolated according to the
+    official/recovered protocol; HPatches is evaluation only and must not
+    influence training or checkpoint selection.
+  identity_match_hash_gate: >
+    Disabled E-063 path must replay the frozen parent feature path at matcher
+    input and selected output within the declared tolerances.
+  training_resize: official_SLIM_outdoor_train_1024_edge_padding_or_audited_equivalent
+  hpatches_resize: shorter_edge_480
+  hpatches_pairs: 108_sequences_540_pairs_image1_to_2_6
+  hpatches_max_correspondences: 1000
+  repeat_aggregation: deterministic_frozen_protocol_not_best_of_repeat
+  heldout1200_access: forbidden_historically_consumed
+
+interpretation_boundary:
+  highest_claim_if_passed: >
+    S4-style long-funnel evidence that a DeformDesc-centered matcher-
+    consumption route is a better same-step candidate than E-059/E-060A/E-061
+    for unchanged OfficialSLiM matcher compatibility.
+  exact_configuration_rejected_if_failed: >
+    Only exact M055 variant placement, losses, optimizer, seed set, D0/D1/D2
+    short or long recipe, and the local protocol.
+  method_families_not_rejected:
+    - DeformDesc feature extractors broadly
+    - feature-side interface shaping broadly
+    - independent matcher design
+    - learned quota
+    - RRU redesign
+    - SLiM paper HPatches protocol
+    - final/protected benchmark performance
+  reopen_only_if:
+    - Materially change the feature-extractor interface contract or training supervision.
+    - Add an explicitly new matcher under a separate contract.
+    - Resolve the SLiM public-vs-paper HPatches protocol gap with new official evidence.
+
+required_artifacts:
+  - frozen_contract
+  - runner_and_hash
+  - config_and_manifest_hashes
+  - official_slim_replay_and_hash_audit
+  - parent_ascs_replay_and_hash_audit
+  - unit_identity_and_positive_control_results
+  - activation_action_audit
+  - optimizer_membership.json
+  - gradient_norms.csv
+  - parameter_delta_norms.csv
+  - complete_training_history
+  - checkpoint_reload_audit.json
+  - feature_interface_metric_table.csv
+  - matcher_survival_table.csv
+  - hpatches_pair_table.csv
+  - hpatches_auc_table.csv
+  - wall_clock_and_gpu_time_report.json
+  - matched_control_results.json
+  - forbidden_read_audit.json
+  - RESULT_CARD.md

@@ -1,0 +1,142 @@
+schema_version: 1
+experiment_id: P37-20260921-IGM-M0-HP1
+created: '2026-09-23'
+status: frozen_for_engineering_audit
+
+function_a:
+  name: IndependentGeometryMatcherM0
+  scientific_hypothesis: >-
+    A fully independent image matcher can learn HPatches homography geometry
+    and provide a sound standalone base for later one-mechanism improvements.
+  observable_behavior: >-
+    Raw image pairs produce independent multiscale features, cross-view states,
+    partial assignments, and bilaterally refined correspondences without any
+    OfficialSLiM, D0, or JCGA runtime dependency.
+  inputs:
+    tensors:
+      - paired grayscale HPatches images from one frozen role
+      - padding masks and original-to-resized transforms
+      - homography in the loss/evaluator only
+    coordinate_systems:
+      - stride-8 pixel-center coarse coordinates
+      - stride-4 pixel-center fine coordinates
+      - restored original-image xy coordinates
+    masks_and_validity:
+      - padding excluded in attention and assignment
+      - out-of-image homography projections excluded from loss
+  outputs:
+    tensors:
+      - FP32 partial assignment with explicit null
+      - mutual coarse IDs and confidences
+      - bilateral refined source and target coordinates
+    valid_ranges:
+      - finite assignment probabilities in [0, 1] with row sum one
+      - at most 2048 pre-refinement and 1000 evaluator correspondences
+      - finite in-bounds restored coordinates
+    fallback_behavior: fewer than four final matches yields evaluator failure error
+  main_path_action_point: independent assignment and bilateral refinement
+  downstream_tensor_or_decision_changed: complete final correspondence set
+
+identity_contract:
+  disable_or_identity_setting: synthetic identity homography with identical images
+  baseline_reference: exact pixel-center identity correspondences
+  exact_hash_fields:
+    - model source and initialization
+    - sequence and pair manifests
+    - sample order and augmentations
+    - evaluator source and parameters
+  numeric_tolerances:
+    coordinate_max_abs_px: 1.0e-4
+    assignment_row_sum_max_abs: 1.0e-5
+  required_parity: identity input must preserve direction, scale, and coordinate restoration
+
+positive_control:
+  type: synthetic_and_tiny_overfit
+  construction: >-
+    Same-parameterization synthetic identity/translation/scale homographies and
+    eight native train pairs from four train sequences traverse encoder,
+    interaction, assignment, refinement, and common evaluator.
+  expected_action: >-
+    Synthetic refined transfer error decreases and the exact tiny recipe fits
+    without bypassing the student parameterization.
+  minimum_gate: >-
+    Synthetic median refined transfer error <= 0.5 px; tiny total-loss ratio
+    <= 0.25; at least 7/8 tiny pairs have >= 20 inliers at 3 px; all active
+    groups receive gradients and update.
+  same_path_as_student: true
+
+matched_control:
+  type: equal_data_exposure_scratch_baseline
+  construction: OfficialSLiM-HP-Scratch in a separate process
+  invariants:
+    - same HPatches role, directed pair, and augmentation stream
+    - same random seeds, effective batch, FP32, steps, optimizer schedule, and endpoint
+    - same coordinate restoration, top-1000 cap, estimator, repeats, and aggregation
+    - no pretrained checkpoint for either primary arm
+
+activation_audit:
+  branch_use_counter: encoder stages interaction blocks assignment heads and bilateral refiner
+  output_delta_metric: feature variance cross-view-state delta assignment entropy selected IDs and bilateral offsets
+  minimum_activation_gate: >-
+    Every declared module executes on real pairs; both refined sides have
+    nonzero finite offsets on at least one non-identity positive-control pair;
+    assignment and coordinates change under a target-image permutation.
+
+trainability_audit:
+  trainable_parameter_groups:
+    - encoder_and_fpn
+    - dense_pair_interaction
+    - affinity_and_matchability
+    - bilateral_fine_projection
+  optimizer_membership_log: optimizer_parameter_IDs.json
+  gradient_norm_log: component_group_gradient_table.csv
+  parameter_delta_norm_log: initial_final_parameter_delta_table.csv
+  finite_nonzero_gradient_gate: every active tensor receives a finite nonzero gradient and update
+
+training_adequacy:
+  tiny_set_pairs_and_scenes: 8 pairs from 4 HPatches train-role sequences
+  optimizer_steps_or_window_exposures: tiny 1000 steps; formal 20000 steps per arm and seed
+  fixed_checkpoint_rule: step 20000 only
+  full_metric_trajectory_path: complete_training_and_task_trajectory.csv
+  convergence_or_stability_rule: >-
+    Log all losses and train-only geometry metrics every 100 steps, fixed dev
+    diagnostics every 2000 without selection, and final 20 percent slopes.
+  tiny_set_expression_gate: loss ratio <= 0.25 and 7/8 pairs with >=20 inliers at 3 px
+
+evaluation_fidelity:
+  official_checkpoint_hash: not_applicable_scratch_primary_comparison
+  train_dev_test_physical_scene_isolation: sequence-level 72/18/18 with zero sequence or file overlap
+  identity_match_hash_gate: synthetic identity and coordinate restoration audit
+  resize: shorter_edge_480_aspect_preserved_pad_multiple_16
+  ransac_threshold: 3px_at_shorter_edge_480_scaled_to_original
+  ransac_confidence: 0.99999
+  repeat_aggregation: per_repeat_sequence_macro_auc_then_repeat_mean
+  heldout1200_access: forbidden_historically_consumed
+
+interpretation_boundary:
+  highest_claim_if_passed: >-
+    Retrospective HPatches sequence-held-out scratch benefit of exact IGM-M0
+    over exact OfficialSLiM-HP-Scratch, plus standalone method fidelity.
+  exact_configuration_rejected_if_failed: exact M0 architecture loss optimizer and 20000-step HPatches recipe
+  method_families_not_rejected:
+    - independent image matching broadly
+    - covisibility-conditioned context
+    - efficient geometry feedback
+    - geometry-consistent pretraining
+  reopen_only_if:
+    - implementation error correction under the frozen semantics
+    - a separately frozen one-mechanism successor after valid M0 interpretation
+
+required_artifacts:
+  - frozen_contract_hash
+  - data_role_and_file_manifests
+  - dependency_and_state_dict_independence_audit
+  - unit_identity_positive_control_and_tiny_results
+  - optimizer_gradient_update_reload_audits
+  - budget_preflight_result
+  - complete_training_history
+  - final_checkpoint_hashes
+  - per_pair_sequence_repeat_and_aggregate_tables
+  - RESULT_CARD.md
+  - RESULT_CARD.json
+

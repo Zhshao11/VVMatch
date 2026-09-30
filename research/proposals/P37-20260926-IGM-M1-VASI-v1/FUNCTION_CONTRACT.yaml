@@ -1,0 +1,143 @@
+schema_version: 1
+experiment_id: P37-20260926-IGM-M1-HP2
+created: '2026-09-26'
+status: frozen_for_engineering_audit
+
+function_a:
+  name: ViewpointAdaptiveSpanInteraction
+  scientific_hypothesis: >-
+    Coarse probabilistic routing can replace diffuse global stride-8 cross
+    interaction with soft-covisibility-weighted adaptive local exact attention,
+    recovering large-viewpoint correspondence quality while preserving the
+    standalone matcher's efficiency advantage.
+  inputs:
+    tensors:
+      - independent stage-4 stride-16 source and target features
+      - independent stride-8 coarse source and target features
+      - padding and validity masks
+      - train-role homography in route/span losses only
+    coordinate_systems:
+      - stride-16 guide pixel centers
+      - stride-8 adaptive-span centers and radii
+      - unchanged original-image coordinate restoration
+    masks_and_validity:
+      - invalid guide candidates masked before categorical softmax
+      - sampled stride-8 locations outside valid images masked
+      - no GT-derived inference mask or crop
+  outputs:
+    tensors:
+      - bidirectional guide candidate-plus-null distributions
+      - expected center diagonal uncertainty and soft covisibility
+      - updated stride-8 contextual tokens
+    valid_ranges:
+      - categorical sums one within 1e-5
+      - finite mu and positive sigma
+      - span radius in [2, 12] stride-8 cells
+      - covisibility in [0, 1]
+    fallback_behavior: null-one guide produces zero cross message without changing tensor shape
+  main_path_action_point: cross-view contextualization before unchanged M0R1 assignment
+  downstream_tensor_or_decision_changed: contextual tokens then coarse IDs and refined matches
+
+identity_contract:
+  disable_or_identity_setting: set cross-message multiplier to zero
+  baseline_reference: IGM-M0R1 contextual tokens before its cross-attention contribution
+  exact_hash_fields:
+    - inherited encoder FPN assignment refiner evaluator and HP2 manifests
+    - source config initialization and sample stream
+  numeric_tolerances:
+    categorical_sum_max_abs: 1.0e-5
+    zero_cross_message_max_abs: 1.0e-6
+    inherited_module_initial_tensor_max_abs: 0.0
+  required_parity: all inherited M0R1 tensors initialize identically under paired seed
+
+positive_control:
+  type: same_parameterization_route_and_student
+  construction: >-
+    Synthetic translation scale rotation and projective warps plus native train
+    pairs traverse guide distributions adaptive sampling exact attention parent
+    assignment refinement and evaluator. GT route substitution is diagnostic
+    only and uses the identical sampler/action path.
+  expected_action: >-
+    Predicted or GT centers move sampling spans to true correspondence regions;
+    uncertainty expands for ambiguous regions; wrong/permuted centers degrade.
+  minimum_gate: >-
+    GT-route coverage >=0.95, predicted-route synthetic coverage >=0.90,
+    permuted-route coverage <=0.50, median refined transfer <=0.5 px, and all
+    VASI tensors receive gradients and updates.
+  same_path_as_student: true
+
+matched_control:
+  type: paired_predecessor_and_scratch_baseline
+  construction: >-
+    Fresh IGM-M0R1 and OfficialSLiM-HP-Scratch trajectories on byte-identical
+    HP2 streams, seeds, exposure, precision, endpoint, and evaluator.
+  invariants:
+    - same HP2 train development evaluation roles
+    - same pair direction augmentation and sample order
+    - same optimizer steps precision and final checkpoint rule
+    - same M0R1 assignment refinement cap and evaluator for IGM arms
+    - same common top-1000 six-repeat aggregation for all arms
+
+activation_audit:
+  branch_use_counter: guide interaction route distributions adaptive sampler exact local cross attention covisibility multiplier
+  output_delta_metric: route coverage sigma span covisibility message delta assignment IDs and viewpoint transfer error
+  minimum_activation_gate: >-
+    Every branch executes; span and covisibility are finite and nonconstant;
+    target permutation changes routes/messages; GT and permutation controls are separated.
+
+trainability_audit:
+  trainable_parameter_groups:
+    - inherited_encoder_and_fpn
+    - stride16_guide_interaction_and_route_heads
+    - stride8_adaptive_span_interaction
+    - inherited_affinity_and_null_logits
+    - inherited_bilateral_refiner
+  optimizer_membership_log: optimizer_parameter_IDs.json
+  gradient_norm_log: component_and_tensor_gradient_table.csv
+  parameter_delta_norm_log: initial_final_parameter_delta_table.csv
+  finite_nonzero_gradient_gate: every intended tensor receives finite nonzero gradients and updates
+
+training_adequacy:
+  tiny_set_pairs_and_scenes: 8 HP2 train pairs from 4 sequences including 4 viewpoint pairs
+  optimizer_steps_or_window_exposures: tiny 1500; conditional formal 20000 per arm and seed
+  fixed_checkpoint_rule: tiny step 1500; formal step 20000 only
+  full_metric_trajectory_path: complete_training_route_and_task_trajectory.csv
+  convergence_or_stability_rule: >-
+    Log parent losses route/span losses route coverage sigma/span/covisibility
+    distributions match counts and inliers; falling aggregate loss alone cannot pass.
+  tiny_set_expression_gate: >-
+    total loss ratio <=0.25; 8/8 pairs >=20 matches; >=7/8 pairs >=20 inliers
+    at 3 px; viewpoint route coverage >=0.75; all gradient/update/reload gates pass.
+
+evaluation_fidelity:
+  official_checkpoint_hash: not_applicable_scratch_primary_comparison
+  train_dev_test_physical_scene_isolation: new HP2 sequence-disjoint 72/18/18 roles
+  identity_match_hash_gate: inherited M0R1 parity and synthetic route identity
+  resize: shorter_edge_480_aspect_preserved_pad_multiple_16
+  ransac_threshold: 3px_at_shorter_edge_480_scaled_to_original
+  ransac_confidence: 0.99999
+  repeat_aggregation: per_repeat_sequence_macro_auc_then_repeat_mean
+  heldout1200_access: forbidden_historically_consumed
+
+interpretation_boundary:
+  highest_claim_if_passed: >-
+    Retrospective HPatches sequence-held-out practical non-inferiority to
+    OfficialSLiM-HP-Scratch with material efficiency benefit and evidence that
+    the combined VASI mechanism improves the matched M0R1 predecessor.
+  exact_configuration_rejected_if_failed: exact VASI architecture losses optimizer and HP2 recipe
+  method_families_not_rejected:
+    - independent image matching broadly
+    - geometry feedback M2
+    - representation pretraining M3
+    - adaptive span or covisibility broadly
+  reopen_only_if:
+    - implementation error correction without semantic change
+
+required_artifacts:
+  - frozen_contract_and_HP2_manifests
+  - inherited_tensor_and_dependency_audit
+  - route_sampler_identity_oracle_permutation_controls
+  - gradient_update_reload_and_complete_trajectory
+  - tiny_development_budget_and_terminal_result_cards
+  - endpoint_freeze_evaluation_and_bootstrap_tables
+

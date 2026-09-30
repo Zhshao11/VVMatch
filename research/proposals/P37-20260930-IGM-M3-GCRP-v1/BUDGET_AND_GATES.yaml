@@ -1,0 +1,102 @@
+schema_version: 1
+experiment: P37-20260930-IGM-M3-HP3
+status: frozen_for_engineering_audit
+
+data:
+  roles: reuse_exact_HP2_72_train_18_development_18_evaluation
+  development_evaluation_state: sealed_unread
+  pretrain_probe_rule: >-
+    Within HP3 train i_ and v_ strata, rank SHA256("P37-20260930-GCRP-PROBE|" +
+    sequence_name); first 4 i_ and first 4 v_ are probe, remaining 64 fit.
+  pretrain_fit_sequences: 64
+  pretrain_probe_sequences: 8
+  evaluation_claim: retrospective_internal_only
+
+pretraining:
+  steps: 10000
+  seed: 20260930
+  arms: [correct_H_GCRP, shuffled_H_control]
+  effective_batch: 4
+  precision: fp32
+  optimizer: {name: AdamW, learning_rate: 0.0002, weight_decay: 0.0001, betas: [0.9, 0.999], warmup_steps: 500, final_lr_fraction: 0.05, global_grad_clip: 1.0}
+  ema_decay: 0.996
+  mask_ratio: 0.60
+  mask_block: 4x4_stride8
+  info_nce_temperature: 0.07
+  loss_weights: {masked_reconstruction: 1.0, correspondence_contrast: 1.0, expected_geometry: 0.2, variance_covariance: 0.05}
+  gates:
+    masked_loss_ratio_le: 0.40
+    projected_std_ge: 0.05
+    recall_gain_vs_random_pp_ge: 15.0
+    recall_gain_vs_shuffled_pp_ge: 10.0
+    cosine_margin_gain_vs_random_ge: 0.15
+    cosine_margin_gain_vs_shuffled_ge: 0.10
+    positive_viewpoint_probe_sequences: 4
+    all_student_tensors_gradient_update_reload: true
+    exported_extra_inference_parameters_eq: 0
+
+tiny:
+  arm: IGM-M3-GCRP
+  seed: 20260930
+  steps: 1500
+  pairs: 8
+  viewpoint_pairs: 4
+  gates:
+    loss_ratio_le: 0.25
+    every_pair_matches_ge: 20
+    pairs_with_at_least_20_inliers_ge: 7
+    all_tensors_gradient_update_reload: true
+    no_pretrain_module_in_inference: true
+
+formal:
+  arms: [OfficialSLiM-HP-Scratch-30K, IGM-M0R1-Scratch-30K, IGM-M3-GCRP]
+  seeds: [20260930, 20261001]
+  total_steps_per_arm_seed: 30000
+  M3_schedule: {pretrain_steps: 10000, fine_tune_steps: 20000}
+  control_schedule: {supervised_steps: 30000}
+  effective_batch: 4
+  precision: fp32
+  checkpoint_rule: final_only
+  max_gpu_hours_all_six_trajectories: 48
+  watchdog_required: true
+  preferred_host: zzvr
+
+development_gate:
+  release_after_all_six_endpoints_frozen: true
+  M3_minus_M0R1_overall_auc5_pp_ge: 5.0
+  M3_minus_M0R1_viewpoint_auc5_pp_ge: 10.0
+  both_seed_directions_positive: true
+  M3_minus_M0R1_illumination_auc5_pp_ge: -3.0
+  action_if_failed: stop_before_HP3_evaluation
+
+evaluation:
+  release_only_after_development_pass: true
+  correspondence_cap: 1000
+  ransac_repeats: [66, 67, 68, 69, 70, 71]
+  primary_metric: equal_sequence_macro_auc_at_5
+  bootstrap: {unit: sequence, samples: 10000, seed: 20260930, paired_indices: true}
+  practical_noninferiority:
+    M3_minus_official_mean_auc5_pp_ge: -3.0
+    each_seed_delta_pp_gt: -5.0
+    bootstrap_ci_lower_pp_gt: -5.0
+    viewpoint_delta_pp_ge: -5.0
+    illumination_delta_pp_ge: -3.0
+  mechanism_gain:
+    M3_minus_M0R1_mean_auc5_pp_ge: 8.0
+    M3_minus_M0R1_viewpoint_auc5_pp_ge: 15.0
+    both_seed_directions_positive: true
+  efficiency:
+    inference_parameter_ratio_to_official_le: 0.25
+    inference_p95_ratio_to_official_le: 0.25
+    peak_memory_ratio_to_official_le: 0.75
+    inference_state_keys_equal_M0R1: true
+
+stop_conditions:
+  - any HP3 role or pretrain fit probe overlap
+  - any development evaluation or pretrain probe read before its gate
+  - any external pretrained model teacher data or inference dependency
+  - any VASI M2 hard gate threshold topk or evaluator change
+  - any pretrain capacity tiny gradient update reload or export gate failure
+  - credible six-trajectory forecast exceeds 48 GPU-hours
+  - artifact overwrite deletion or forbidden data access
+

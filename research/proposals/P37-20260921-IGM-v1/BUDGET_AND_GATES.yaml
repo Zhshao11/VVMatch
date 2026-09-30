@@ -1,0 +1,74 @@
+schema_version: 1
+experiment: P37-20260921-IGM-M0-HP1
+status: frozen_for_engineering_audit
+
+data:
+  valid_sequences: 108
+  illumination_sequences: 52
+  viewpoint_sequences: 56
+  split_rule: >-
+    Within i_ and v_ strata, sort by SHA256("P37-20260921-IGM-HP1|" +
+    sequence_name). Assign i_: 34/9/9 and v_: 38/9/9 to train/dev/eval.
+  role_counts:
+    train: {illumination: 34, viewpoint: 38, total: 72, native_pairs: 360}
+    development: {illumination: 9, viewpoint: 9, total: 18, native_pairs: 90}
+    evaluation: {illumination: 9, viewpoint: 9, total: 18, native_pairs: 90}
+  directed_training_pairs: 720
+  isolation_unit: HPatches_sequence
+
+tiny:
+  arms: [OfficialSLiM-HP-Scratch, IGM-M0]
+  pairs: 8
+  sequences: 4
+  optimizer_steps: 1000
+  gates:
+    loss_ratio_le: 0.25
+    pairs_with_at_least_20_inliers_at_3px_ge: 7
+    all_parameter_groups_gradient_and_update: true
+    checkpoint_reload_exact: true
+
+formal:
+  arms: [OfficialSLiM-HP-Scratch, IGM-M0]
+  seeds: [20260923, 20260924]
+  optimizer_steps_per_trajectory: 20000
+  effective_batch: 4
+  precision: fp32
+  optimizer: AdamW
+  learning_rate: 0.0002
+  weight_decay: 0.0001
+  betas: [0.9, 0.999]
+  warmup_steps: 500
+  final_lr_fraction: 0.05
+  global_grad_clip: 1.0
+  checkpoint_rule: final_step_20000_only
+  max_gpu_hours_all_formal_trajectories: 48
+  watchdog_required: true
+  preferred_host: zzvr
+
+evaluation:
+  correspondence_cap: 1000
+  ransac_repeats: [66, 67, 68, 69, 70, 71]
+  primary_metric: equal_sequence_macro_auc_at_5
+  secondary_metrics: [equal_sequence_macro_auc_at_3, equal_sequence_macro_auc_at_10, pair_weighted_auc]
+  bootstrap: {unit: sequence, samples: 10000, seed: 20260923, paired_indices: true}
+
+m0_qualification:
+  fidelity_and_training_gates_mandatory: true
+  mean_auc5_delta_vs_scratch_baseline_pp_ge: -3.0
+  each_seed_auc5_delta_vs_scratch_baseline_pp_gt: -5.0
+  parameter_count_ratio_to_scratch_baseline_le: 1.0
+  inference_p95_ratio_to_scratch_baseline_le: 1.5
+  strong_positive_result:
+    mean_auc5_delta_pp_ge: 0.5
+    both_seed_directions_positive: true
+    paired_sequence_bootstrap_ci_lower_gt_zero: true
+
+stop_conditions:
+  - any sequence or file overlap across roles
+  - any evaluation payload or metric read before final endpoint freeze
+  - any IGM dependency on OfficialSLiM D0 or JCGA
+  - primary arms differ in pair augmentation exposure precision steps or evaluator
+  - positive control tiny gradient update reload or action path failure
+  - credible four-trajectory forecast exceeds 48 GPU-hours
+  - artifact overwrite deletion or forbidden data access
+

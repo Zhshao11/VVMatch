@@ -1,0 +1,138 @@
+schema_version: 1
+experiment_id: P37-20260930-IGM-M3-HP3
+created: '2026-09-30'
+status: frozen_for_engineering_audit
+
+function_a:
+  name: GeometryConsistentRepresentationPretraining
+  scientific_hypothesis: >-
+    Training-only masked cross-view geometry pretraining can make the
+    lightweight M0R1 encoder/FPN viewpoint-stable enough to approach matched
+    OfficialSLiM accuracy without adding inference parameters or latency.
+  inputs:
+    tensors:
+      - HP3 train-role image pairs and known train homographies
+      - independent bounded projective and photometric augmentations
+      - pixel-center masks and composite homography
+    coordinate_systems:
+      - original and augmented image pixel centers
+      - stride-4 stride-8 and stride-16 FPN coordinates
+    masks_and_validity:
+      - valid overlap at least 0.35
+      - out-of-image padded and occluded synthetic regions excluded
+      - 60 percent contiguous valid stride-8 token masking
+  outputs:
+    tensors:
+      - pretrained M0R1 encoder/FPN state dict only
+      - train-only representation diagnostics
+    valid_ranges:
+      - finite normalized embeddings
+      - projected feature standard deviation at least 0.05 at admission
+      - no pretraining-only parameter in exported inference state
+    fallback_behavior: invalid transform is deterministically resampled from the frozen seed stream
+  main_path_action_point: encoder/FPN initialization before normal M0R1 training
+  downstream_tensor_or_decision_changed: coarse and fine image representations
+
+identity_contract:
+  disable_or_identity_setting: skip P0 and use paired scratch M0R1 initialization
+  baseline_reference: IGM-M0R1-Scratch-30K
+  exact_hash_fields:
+    - HP3 roles and 64/8 pretrain fit/probe manifests
+    - transform and exposure streams
+    - M0R1 architecture assignment refiner and evaluator sources
+    - exported encoder/FPN state
+  numeric_tolerances:
+    non_encoder_inherited_initial_tensor_max_abs: 0.0
+    exported_inference_extra_parameter_count: 0
+    coordinate_roundtrip_max_abs_px: 1.0e-4
+  required_parity: M3 and M0R1 inference state-dict keys and shapes are identical
+
+positive_control:
+  type: matched_correct_vs_shuffled_geometry_pretraining
+  construction: >-
+    Train correct-H and shuffled-H pretraining with identical images transforms
+    masks steps optimizer and architecture; probe on eight unread train-role
+    sequences including four viewpoint sequences.
+  expected_action: >-
+    Correct geometry improves masked reconstruction, descriptor correspondence
+    recall, positive-negative margin, and every viewpoint probe sequence.
+  minimum_gate: >-
+    Correct-H recall@8px gains >=15 pp over random and >=10 pp over shuffled;
+    cosine margin gains >=0.15 and >=0.10; 4/4 viewpoint probes improve.
+  same_path_as_student: true
+
+matched_control:
+  type: equal_total_steps_and_image_exposures
+  construction: >-
+    Official scratch and M0R1 scratch receive 30k supervised steps; M3 receives
+    10k GCRP plus 20k unchanged M0R1 fine-tuning. All use paired HP3 streams,
+    FP32, effective batch four, optimizer family, seeds, and final-only rule.
+  invariants:
+    - same 72 train 18 development 18 evaluation sequences
+    - same number of two-image exposures and optimizer steps
+    - same final M0R1 architecture for M0R1 and M3
+    - same common top-1000 six-repeat evaluator
+
+activation_audit:
+  branch_use_counter: mask predictor EMA target InfoNCE geometry expectation variance covariance
+  output_delta_metric: masked cosine recall margin expected-coordinate error feature variance and exported tensor delta
+  minimum_activation_gate: >-
+    Every P0 branch executes, correct and shuffled geometry produce different
+    representation metrics, and every intended student/P0 tensor receives gradients.
+
+trainability_audit:
+  trainable_parameter_groups:
+    - encoder_and_fpn
+    - projection_and_mask_predictor
+    - scale_embeddings
+    - fine_tune_pair_interaction
+    - fine_tune_affinity_and_null_logits
+    - fine_tune_bilateral_refiner
+  optimizer_membership_log: optimizer_parameter_IDs.json
+  gradient_norm_log: component_and_tensor_gradient_table.csv
+  parameter_delta_norm_log: initial_final_parameter_delta_table.csv
+  finite_nonzero_gradient_gate: all intended non-EMA tensors receive finite nonzero gradients and updates
+
+training_adequacy:
+  pretrain_fit_probe_sequences: 64_fit_8_probe_inside_HP3_train
+  optimizer_steps_or_window_exposures: P0 10000 then fine-tune 20000; controls supervised 30000
+  fixed_checkpoint_rule: P0 step10000 and final total step30000 only
+  full_metric_trajectory_path: complete_pretrain_and_matcher_trajectory.csv
+  convergence_or_stability_rule: >-
+    Log every loss representation metric collapse diagnostic action metric and
+    late slope; no selected checkpoint or favorable transform subset.
+  tiny_set_expression_gate: >-
+    1500-step matcher tiny loss ratio <=0.25, all pairs >=20 matches, >=7/8
+    pairs >=20 inliers at 3px, and every gradient/update/reload gate passes.
+
+evaluation_fidelity:
+  official_checkpoint_hash: not_applicable_all_primary_arms_scratch
+  train_dev_test_physical_scene_isolation: reuse sealed HP2 sequence-level 72/18/18 as HP3
+  identity_match_hash_gate: exact M0R1 inference structure and coordinate restoration
+  resize: shorter_edge_480_aspect_preserved_pad_multiple_16
+  ransac_threshold: 3px_at_shorter_edge_480_scaled_to_original
+  ransac_confidence: 0.99999
+  repeat_aggregation: per_repeat_sequence_macro_auc_then_repeat_mean
+  heldout1200_access: forbidden_historically_consumed
+
+interpretation_boundary:
+  highest_claim_if_passed: >-
+    Retrospective HPatches sequence-held-out practical non-inferiority with
+    zero added inference modules and evidence for the exact GCRP initialization.
+  exact_configuration_rejected_if_failed: exact GCRP losses transforms optimizer 10k pretrain plus 20k fine-tune recipe
+  method_families_not_rejected:
+    - geometry pretraining broadly
+    - external-data or foundation representation pretraining
+    - independent image matching broadly
+    - geometry feedback M2
+  reopen_only_if:
+    - implementation correction without semantic change
+
+required_artifacts:
+  - frozen_HP3_and_pretrain_fit_probe_manifests
+  - transform_exposure_and_source_hashes
+  - correct_shuffled_random_representation_controls
+  - gradient_update_EMA_reload_and_export_audits
+  - inference_state_key_and_call_graph_absence_audit
+  - tiny_budget_formal_development_and_conditional_evaluation_cards
+
